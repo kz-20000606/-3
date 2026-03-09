@@ -80,9 +80,16 @@
         try {
             const response = await fetch(API_URL);
             const text = await response.text();
-            const rows = text.split('\n').map(row => {
-                return row.split(/,(?=(?:(?:[^"]*"){2})*[^"]*$)/).map(cell => cell.replace(/^"|"$/g, '').trim());
-            });
+            // 修正後（コピーして差し替え）
+const rows = text.split(/\r?\n/).map(row => {
+    const regex = /(".*?"|[^",\s]+)(?=\s*,|\s*$)/g;
+    let m;
+    const res = [];
+    while ((m = regex.exec(row)) !== null) {
+        res.push(m[1].replace(/^"|"$/g, '').trim());
+    }
+    return res;
+});
             allData = rows.slice(1).filter(row => row.length >= 6 && row[0] !== "");
             buildCategorizedMenu();
             document.getElementById('loading-screen').classList.add('hidden');

@@ -71,28 +71,28 @@
 
     async function fetchData() {
         try {
-            const response = await fetch(CSV_URL);
+            // JSON形式でデータを取得するためのURL（末尾を /gviz/tq... に変更）
+            const JSON_URL = `https://docs.google.com/spreadsheets/d/${SPREADSHEET_ID}/gviz/tq?tqx=out:json&sheet=${encodeURIComponent(SHEET_NAME)}`;
+            const response = await fetch(JSON_URL);
             const text = await response.text();
             
-            // どんな壊れ方をしていても「引用符に囲まれた中身」を列として抽出する
-            const rows = text.split(/\r?\n/).filter(l => l.trim()).map(line => {
-                const result = [];
-                let cur = "", inQuotes = false;
-                for (let char of line) {
-                    if (char === '"') inQuotes = !inQuotes;
-                    else if (char === ',' && !inQuotes) { result.push(cur.trim()); cur = ""; }
-                    else cur += char;
-                }
-                result.push(cur.trim());
-                return result;
-            });
+            // Googleが返す特殊な形式（google.visualization.Query.setResponse）を解析
+            const jsonData = JSON.parse(text.substring(text.indexOf("{"), text.lastIndexOf("}") + 1));
+            const rows = jsonData.table.rows;
 
-            allData = rows.slice(1).filter(r => r.length >= 6);
+            // データを整理して allData に格納
+            allData = rows.map(r => {
+                // 各セルの値を配列にする（値がない場合は空文字）
+                return r.c.map(cell => (cell && cell.v !== null) ? String(cell.v) : "");
+            }).filter(row => row.length >= 6 && row[0] !== "");
+
             buildCategorizedMenu();
+            
             document.getElementById('loading-screen').classList.add('hidden');
             document.getElementById('menu-screen').classList.remove('hidden');
-        } catch (e) {
-            document.getElementById('loading-screen').innerText = "エラー：再読み込みしてください。";
+        } catch (error) {
+            console.error(error);
+            document.getElementById('loading-screen').innerText = "データの取得に失敗しました。公開設定を確認してください。";
         }
     }
 

@@ -146,22 +146,34 @@
         loadQuestion();
     }
 
-    function loadQuestion() {
+  function loadQuestion() {
         const row = currentPack[currentIdx];
-        document.getElementById('progress').innerText = `${currentPack[0][0]}：${currentIdx + 1} / 5`;
-        document.getElementById('q-text').innerText = row[1];
+        document.getElementById('progress').innerText = `${currentPack[0][0].split('：')[1] || currentPack[0][0]}：${currentIdx + 1} / 5`;
+        
+        // 問題文の表示（前後の空白を削除して確実に数式として認識させる）
+        const qElement = document.getElementById('q-text');
+        qElement.innerHTML = row[1].trim(); 
+        
+        // 選択肢の生成
         const optContainer = document.getElementById('options');
         optContainer.innerHTML = "";
+        
         [row[2], row[3], row[4]].forEach((text, i) => {
             const btn = document.createElement('button');
             btn.className = "opt-btn";
-            btn.innerText = text;
+            // 選択肢も数式が含まれる可能性があるので trim する
+            btn.innerHTML = text.trim();
             btn.onclick = () => check(i, parseInt(row[5]));
             optContainer.appendChild(btn);
         });
+
         document.getElementById('feedback').style.display = 'none';
         document.getElementById('next-btn').style.display = 'none';
-        if (window.MathJax) MathJax.typeset();
+        
+        // 重要：数式を再レンダリングする命令を少し遅らせて確実に実行
+        if (window.MathJax) {
+            MathJax.typesetPromise().catch((err) => console.log(err));
+        }
     }
 
     function check(userIdx, correctIdx) {

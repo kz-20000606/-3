@@ -6,111 +6,96 @@
     <title>計算の工夫トレーニング</title>
     <script>
         window.MathJax = {
-            tex: { inlineMath: [['$', '$'], ['\\(', '\\)']] },
+            tex: { inlineMath: [['$', '$']] },
             chtml: { displayAlign: 'left' }
         };
     </script>
     <script id="MathJax-script" async src="https://cdn.jsdelivr.net/npm/mathjax@3/es5/tex-mml-chtml.js"></script>
     <style>
         :root { --primary: #4a90e2; --success: #28a745; --error: #dc3545; --bg: #f4f7f9; }
-        body { font-family: 'Helvetica Neue', Arial, sans-serif; background: var(--bg); margin: 0; padding: 15px; color: #333; }
+        body { font-family: sans-serif; background: var(--bg); margin: 0; padding: 15px; }
         .container { max-width: 600px; margin: auto; background: white; padding: 25px; border-radius: 15px; box-shadow: 0 4px 15px rgba(0,0,0,0.1); }
-        h1 { text-align: center; color: var(--primary); font-size: 1.3rem; border-bottom: 2px solid var(--primary); padding-bottom: 10px; margin-bottom: 25px; }
-        .grade-section { margin-bottom: 30px; }
-        .grade-title { font-weight: bold; font-size: 1.1rem; color: #555; margin-bottom: 12px; padding: 5px 10px; background: #eee; border-left: 5px solid #aaa; border-radius: 0 5px 5px 0; }
+        h1 { text-align: center; color: var(--primary); border-bottom: 2px solid var(--primary); padding-bottom: 10px; }
+        .grade-section { margin-bottom: 25px; }
+        .grade-title { font-weight: bold; background: #eee; padding: 5px 10px; border-left: 5px solid #aaa; margin-bottom: 10px; }
         .menu-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; }
-        .menu-btn { padding: 15px 10px; font-size: 0.95rem; background: white; border: 2.2px solid var(--primary); color: var(--primary); border-radius: 10px; cursor: pointer; font-weight: bold; transition: 0.2s; min-height: 55px; }
+        .menu-btn { padding: 15px; background: white; border: 2px solid var(--primary); color: var(--primary); border-radius: 10px; cursor: pointer; font-weight: bold; min-height: 55px; }
         .menu-btn:hover { background: var(--primary); color: white; }
-        .progress-container { display: flex; justify-content: space-between; align-items: center; margin-bottom: 15px; }
-        .back-to-menu { padding: 6px 12px; font-size: 0.8rem; background: #f0f0f0; border: 1px solid #ccc; border-radius: 5px; cursor: pointer; }
-        .question { font-size: 1.25rem; font-weight: bold; margin-bottom: 20px; background: #f8f9fa; padding: 20px; border-radius: 8px; border-left: 5px solid var(--primary); min-height: 50px; }
+        .question { font-size: 1.25rem; font-weight: bold; margin-bottom: 20px; background: #f8f9fa; padding: 20px; border-radius: 8px; border-left: 5px solid var(--primary); }
         .options { display: grid; gap: 10px; }
-        .opt-btn { padding: 15px; border: 2px solid #eee; border-radius: 10px; background: white; font-size: 1.1rem; cursor: pointer; text-align: left; transition: 0.1s; }
-        #feedback { margin-top: 20px; padding: 15px; border-radius: 10px; display: none; line-height: 1.6; }
-        .correct { background: #e6f4ea; border: 1px solid var(--success); color: #1e7e34; }
-        .wrong { background: #fce8e8; border: 1px solid var(--error); color: #a71d2a; }
-        #next-btn { margin-top: 20px; width: 100%; padding: 15px; background: var(--primary); color: white; border: none; border-radius: 10px; font-weight: bold; display: none; cursor: pointer; }
+        .opt-btn { padding: 15px; border: 2px solid #eee; border-radius: 10px; background: white; font-size: 1.1rem; cursor: pointer; text-align: left; }
+        #feedback { margin-top: 20px; padding: 15px; border-radius: 10px; display: none; }
+        .correct { background: #e6f4ea; border: 1px solid var(--success); }
+        .wrong { background: #fce8e8; border: 1px solid var(--error); }
+        #next-btn { margin-top: 20px; width: 100%; padding: 15px; background: var(--primary); color: white; border: none; border-radius: 10px; display: none; cursor: pointer; }
         .hidden { display: none; }
-        @media (max-width: 480px) { .menu-grid { grid-template-columns: 1fr; } }
     </style>
 </head>
 <body>
 
 <div class="container">
-    <div id="loading-screen" style="text-align:center; padding:50px;">データを読み込み中...</div>
+    <div id="loading-screen" style="text-align:center;">読み込み中...</div>
     <div id="menu-screen" class="hidden">
-        <h1>計算の工夫トレーニング</h1>
+        <h1>計算の工夫</h1>
         <div id="grade-container"></div>
     </div>
     <div id="quiz-screen" class="hidden">
-        <div class="progress-container">
-            <div id="progress" style="font-weight:bold; font-size:0.9rem;"></div>
-            <button class="back-to-menu" onclick="confirmBack()">🏠 メニューへ</button>
-        </div>
+        <div id="progress" style="margin-bottom:10px; font-weight:bold;"></div>
         <div class="question" id="q-text"></div>
         <div class="options" id="options"></div>
         <div id="feedback"></div>
-        <button id="next-btn" onclick="nextQuestion()">次へ進む</button>
-    </div>
-    <div id="result-screen" class="hidden" style="text-align: center;">
-        <h2 style="color: var(--success);">クリア！</h2>
-        <div id="result-text" style="font-size: 1.8rem; margin: 25px 0; font-weight: bold;"></div>
-        <button class="menu-btn" style="width: 100%;" onclick="showMenu()">他のパックに挑戦</button>
+        <button id="next-btn" onclick="nextQuestion()">次へ</button>
     </div>
 </div>
 
 <script>
-    const SPREADSHEET_ID = '1WdkMMX6BOCfwCPkKL7zmRCFOZYZx_ZYjettgS29EFSE';
-    const SHEET_NAME = 'シート1'; 
-    const CSV_URL = `https://docs.google.com/spreadsheets/d/${SPREADSHEET_ID}/gviz/tq?tqx=out:csv&sheet=${encodeURIComponent(SHEET_NAME)}`;
+    // ⚠️ ここに先ほどコピーした「ウェブに公開」のCSV用URLを貼り付けてください
+    const CSV_RAW_URL = 'https://docs.google.com/spreadsheets/d/e/2PACX-1vSCtxF0pf9eI7IcGKjC_VViZhet0baUkvfM6G-21yBqb44zWFxQ5ynuaDri4fhHEtqkSaGmGQTXO45m/pub?gid=0&single=true&output=csv';
 
     let allData = [];
     let currentPack = [];
     let currentIdx = 0;
     let score = 0;
 
-   async function fetchData() {
+    async function fetchData() {
         try {
-            const JSON_URL = `https://docs.google.com/spreadsheets/d/${SPREADSHEET_ID}/gviz/tq?tqx=out:json&sheet=${encodeURIComponent(SHEET_NAME)}`;
-            const response = await fetch(JSON_URL);
-            const text = await response.text();
+            const response = await fetch(CSV_RAW_URL);
+            const csvText = await response.text();
             
-            // GoogleのレスポンスからJSON部分を抽出
-            const start = text.indexOf('{');
-            const end = text.lastIndexOf('}');
-            const jsonData = JSON.parse(text.substring(start, end + 1));
-            const rows = jsonData.table.rows;
+            // 強力なCSVパース処理
+            const rows = [];
+            let row = [];
+            let col = "";
+            let inQuotes = false;
 
-            // 各セルの「見たままの文字(f)」を優先的に取得する
-            allData = rows.map(r => {
-                return r.c.map(cell => {
-                    if (!cell) return "";
-                    // cell.f はスプレッドシート上での「表示文字列」
-                    // cell.v は「生の値」
-                    return cell.f ? String(cell.f) : (cell.v !== null ? String(cell.v) : "");
-                });
-            }).filter(row => row.length >= 6 && row[0] !== "");
+            for (let i = 0; i < csvText.length; i++) {
+                const char = csvText[i];
+                const nextChar = csvText[i+1];
+                if (inQuotes && char === '"' && nextChar === '"') { col += '"'; i++; }
+                else if (char === '"') { inQuotes = !inQuotes; }
+                else if (char === ',' && !inQuotes) { row.push(col.trim()); col = ""; }
+                else if (char === '\n' && !inQuotes) { row.push(col.trim()); rows.push(row); row = []; col = ""; }
+                else if (char !== '\r') { col += char; }
+            }
+            if (col || row.length) { row.push(col.trim()); rows.push(row); }
 
-            buildCategorizedMenu();
-            
+            allData = rows.slice(1).filter(r => r.length >= 6);
+            buildMenu();
             document.getElementById('loading-screen').classList.add('hidden');
             document.getElementById('menu-screen').classList.remove('hidden');
-        } catch (error) {
-            console.error("Fetch error:", error);
-            document.getElementById('loading-screen').innerText = "データの取得に失敗しました。";
+        } catch (e) {
+            document.getElementById('loading-screen').innerText = "エラー：URLを確認してください。";
         }
     }
 
-    function buildCategorizedMenu() {
+    function buildMenu() {
         const container = document.getElementById('grade-container');
-        container.innerHTML = "";
-        const rawUnits = [...new Set(allData.map(row => row[0]))];
+        const units = [...new Set(allData.map(r => r[0]))];
         const cats = {};
-        rawUnits.forEach(n => {
-            const p = n.split('：');
-            const g = p[0];
+        units.forEach(u => {
+            const g = u.split('：')[0];
             if (!cats[g]) cats[g] = [];
-            cats[g].push({ full: n, disp: p[1] || n });
+            cats[g].push({ full: u, disp: u.split('：')[1] || u });
         });
         for (const g in cats) {
             const sec = document.createElement('div');
@@ -118,10 +103,10 @@
             sec.innerHTML = `<div class="grade-title">${g}</div>`;
             const grid = document.createElement('div');
             grid.className = "menu-grid";
-            cats[g].forEach(u => {
+            cats[g].forEach(item => {
                 const b = document.createElement('button');
-                b.className = "menu-btn"; b.innerText = u.disp;
-                b.onclick = () => startQuiz(u.full);
+                b.className = "menu-btn"; b.innerText = item.disp;
+                b.onclick = () => start(item.full);
                 grid.appendChild(b);
             });
             sec.appendChild(grid);
@@ -129,17 +114,17 @@
         }
     }
 
-    function startQuiz(name) {
+    function start(name) {
         currentPack = allData.filter(r => r[0] === name).sort(() => Math.random() - 0.5).slice(0, 5);
         currentIdx = 0; score = 0;
         document.getElementById('menu-screen').classList.add('hidden');
         document.getElementById('quiz-screen').classList.remove('hidden');
-        loadQuestion();
+        showQ();
     }
 
-    async function loadQuestion() {
+    async function showQ() {
         const r = currentPack[currentIdx];
-        document.getElementById('progress').innerText = `${r[0]}：${currentIdx + 1} / 5`;
+        document.getElementById('progress').innerText = `${r[0]}：${currentIdx+1}/5`;
         document.getElementById('q-text').innerHTML = r[1];
         const opts = document.getElementById('options');
         opts.innerHTML = "";
@@ -154,37 +139,23 @@
         if (window.MathJax) await MathJax.typesetPromise();
     }
 
-    async function check(uIdx, cIdx) {
+    async function check(u, c) {
         const f = document.getElementById('feedback');
         document.querySelectorAll('.opt-btn').forEach(b => b.disabled = true);
         f.style.display = 'block';
-        if(uIdx === cIdx) {
-            score++; f.className = 'feedback correct';
-            f.innerHTML = `<strong>正解！✨</strong><br>${currentPack[currentIdx][6]}`;
-        } else {
-            f.className = 'feedback wrong';
-            f.innerHTML = `<strong>不正解...</strong><br>解説：${currentPack[currentIdx][6]}`;
-        }
+        if(u === c) { score++; f.className = 'feedback correct'; f.innerHTML = "正解！✨<br>" + currentPack[currentIdx][6]; }
+        else { f.className = 'feedback wrong'; f.innerHTML = "解説：<br>" + currentPack[currentIdx][6]; }
         if (window.MathJax) await MathJax.typesetPromise();
         document.getElementById('next-btn').style.display = 'block';
     }
 
     function nextQuestion() {
-        if(++currentIdx < 5) loadQuestion();
+        if(++currentIdx < 5) showQ();
         else {
-            document.getElementById('quiz-screen').classList.add('hidden');
-            document.getElementById('result-screen').classList.remove('hidden');
-            document.getElementById('result-text').innerText = `${score} / 5 正解`;
+            alert(`終了！正解数: ${score}/5`);
+            location.reload();
         }
     }
-
-    function showMenu() {
-        document.getElementById('menu-screen').classList.remove('hidden');
-        document.getElementById('quiz-screen').classList.add('hidden');
-        document.getElementById('result-screen').classList.add('hidden');
-    }
-
-    function confirmBack() { if(confirm("メニューに戻りますか？")) showMenu(); }
     fetchData();
 </script>
 </body>

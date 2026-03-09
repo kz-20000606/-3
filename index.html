@@ -69,21 +69,26 @@
     let currentIdx = 0;
     let score = 0;
 
-    async function fetchData() {
+   async function fetchData() {
         try {
-            // JSON形式でデータを取得するためのURL（末尾を /gviz/tq... に変更）
             const JSON_URL = `https://docs.google.com/spreadsheets/d/${SPREADSHEET_ID}/gviz/tq?tqx=out:json&sheet=${encodeURIComponent(SHEET_NAME)}`;
             const response = await fetch(JSON_URL);
             const text = await response.text();
             
-            // Googleが返す特殊な形式（google.visualization.Query.setResponse）を解析
-            const jsonData = JSON.parse(text.substring(text.indexOf("{"), text.lastIndexOf("}") + 1));
+            // GoogleのレスポンスからJSON部分を抽出
+            const start = text.indexOf('{');
+            const end = text.lastIndexOf('}');
+            const jsonData = JSON.parse(text.substring(start, end + 1));
             const rows = jsonData.table.rows;
 
-            // データを整理して allData に格納
+            // 各セルの「見たままの文字(f)」を優先的に取得する
             allData = rows.map(r => {
-                // 各セルの値を配列にする（値がない場合は空文字）
-                return r.c.map(cell => (cell && cell.v !== null) ? String(cell.v) : "");
+                return r.c.map(cell => {
+                    if (!cell) return "";
+                    // cell.f はスプレッドシート上での「表示文字列」
+                    // cell.v は「生の値」
+                    return cell.f ? String(cell.f) : (cell.v !== null ? String(cell.v) : "");
+                });
             }).filter(row => row.length >= 6 && row[0] !== "");
 
             buildCategorizedMenu();
@@ -91,8 +96,8 @@
             document.getElementById('loading-screen').classList.add('hidden');
             document.getElementById('menu-screen').classList.remove('hidden');
         } catch (error) {
-            console.error(error);
-            document.getElementById('loading-screen').innerText = "データの取得に失敗しました。公開設定を確認してください。";
+            console.error("Fetch error:", error);
+            document.getElementById('loading-screen').innerText = "データの取得に失敗しました。";
         }
     }
 

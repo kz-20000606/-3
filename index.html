@@ -78,26 +78,20 @@
 
 async function fetchData() {
         try {
-            // 末尾の不具合を防ぐためにパラメータを追加
-            const response = await fetch(API_URL + "&tq=select *");
+            // 末尾に tqx=out:tsv を指定して、タブ区切りでデータを取得するように変更
+            const TSV_URL = `https://docs.google.com/spreadsheets/d/${SPREADSHEET_ID}/gviz/tq?tqx=out:tsv&sheet=${encodeURIComponent(SHEET_NAME)}`;
+            const response = await fetch(TSV_URL);
             const text = await response.text();
             
-            // より確実な行分割（空行を除去）
+            // タブ（\t）で分割するので、数式内のカンマに影響されません
             const rows = text.split(/\r?\n/).filter(line => line.trim() !== "").map(row => {
-                // カンマ区切りの解析を強化
-                const regex = /(".*?"|[^",\s]+)(?=\s*,|\s*$)/g;
-                let m;
-                const res = [];
-                while ((m = regex.exec(row)) !== null) {
-                    res.push(m[1].replace(/^"|"$/g, '').trim());
-                }
-                return res;
+                return row.split('\t').map(cell => cell.replace(/^"|"$/g, '').trim());
             });
 
-            // 1行目は見出しなので削除。データが不足している行を除外
+            // 有効なデータ（A〜G列まで揃っている行）のみ抽出
             allData = rows.slice(1).filter(row => row.length >= 6);
             
-            if (allData.length === 0) throw new Error("No data");
+            if (allData.length === 0) throw new Error("No data found");
 
             buildCategorizedMenu();
             
@@ -105,7 +99,7 @@ async function fetchData() {
             document.getElementById('menu-screen').classList.remove('hidden');
         } catch (error) {
             console.error(error);
-            document.getElementById('loading-screen').innerText = "データの読み込みに失敗しました。スプレッドシートの内容や公開設定を確認してください。";
+            document.getElementById('loading-screen').innerText = "データの読み込みに失敗しました。";
         }
     }
 

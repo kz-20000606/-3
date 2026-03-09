@@ -3,33 +3,29 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>計算の工夫トレーニング：学年・単元別</title>
-   <script>
-  window.MathJax = {
-    tex: { inlineMath: [['$', '$'], ['\\(', '\\)']] },
-    chtml: { displayAlign: 'left' }
-  };
-</script>
-<script id="MathJax-script" async src="https://cdn.jsdelivr.net/npm/mathjax@3/es5/tex-mml-chtml.js"></script>
+    <title>計算の工夫トレーニング</title>
+    <script>
+        window.MathJax = {
+            tex: { inlineMath: [['$', '$'], ['\\(', '\\)']] },
+            chtml: { displayAlign: 'left' }
+        };
+    </script>
+    <script id="MathJax-script" async src="https://cdn.jsdelivr.net/npm/mathjax@3/es5/tex-mml-chtml.js"></script>
     <style>
         :root { --primary: #4a90e2; --success: #28a745; --error: #dc3545; --bg: #f4f7f9; }
         body { font-family: 'Helvetica Neue', Arial, sans-serif; background: var(--bg); margin: 0; padding: 15px; color: #333; }
         .container { max-width: 600px; margin: auto; background: white; padding: 25px; border-radius: 15px; box-shadow: 0 4px 15px rgba(0,0,0,0.1); }
         h1 { text-align: center; color: var(--primary); font-size: 1.3rem; border-bottom: 2px solid var(--primary); padding-bottom: 10px; margin-bottom: 25px; }
-        
-        /* 学年セクションのデザイン */
         .grade-section { margin-bottom: 30px; }
-        .grade-title { font-weight: bold; font-size: 1.1rem; color: #555; margin-bottom: 12px; padding-left: 8px; border-left: 5px solid #aaa; background: #eee; padding: 5px 10px; border-radius: 0 5px 5px 0; }
-        
+        .grade-title { font-weight: bold; font-size: 1.1rem; color: #555; margin-bottom: 12px; padding: 5px 10px; background: #eee; border-left: 5px solid #aaa; border-radius: 0 5px 5px 0; }
         .menu-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; }
-        .menu-btn { padding: 15px 10px; font-size: 0.95rem; background: white; border: 2.2px solid var(--primary); color: var(--primary); border-radius: 10px; cursor: pointer; font-weight: bold; transition: 0.2s; min-height: 55px; line-height: 1.3; }
+        .menu-btn { padding: 15px 10px; font-size: 0.95rem; background: white; border: 2.2px solid var(--primary); color: var(--primary); border-radius: 10px; cursor: pointer; font-weight: bold; transition: 0.2s; min-height: 55px; }
         .menu-btn:hover { background: var(--primary); color: white; }
-
         .progress-container { display: flex; justify-content: space-between; align-items: center; margin-bottom: 15px; }
         .back-to-menu { padding: 6px 12px; font-size: 0.8rem; background: #f0f0f0; border: 1px solid #ccc; border-radius: 5px; cursor: pointer; }
-        .question { font-size: 1.25rem; font-weight: bold; margin-bottom: 20px; background: #f8f9fa; padding: 20px; border-radius: 8px; border-left: 5px solid var(--primary); }
+        .question { font-size: 1.25rem; font-weight: bold; margin-bottom: 20px; background: #f8f9fa; padding: 20px; border-radius: 8px; border-left: 5px solid var(--primary); min-height: 50px; }
         .options { display: grid; gap: 10px; }
-        .opt-btn { padding: 15px; border: 2px solid #eee; border-radius: 10px; background: white; font-size: 1.1rem; cursor: pointer; text-align: left; }
+        .opt-btn { padding: 15px; border: 2px solid #eee; border-radius: 10px; background: white; font-size: 1.1rem; cursor: pointer; text-align: left; transition: 0.1s; }
         #feedback { margin-top: 20px; padding: 15px; border-radius: 10px; display: none; line-height: 1.6; }
         .correct { background: #e6f4ea; border: 1px solid var(--success); color: #1e7e34; }
         .wrong { background: #fce8e8; border: 1px solid var(--error); color: #a71d2a; }
@@ -42,11 +38,10 @@
 
 <div class="container">
     <div id="loading-screen" style="text-align:center; padding:50px;">データを読み込み中...</div>
-
     <div id="menu-screen" class="hidden">
         <h1>計算の工夫トレーニング</h1>
-        <div id="grade-container"></div> </div>
-
+        <div id="grade-container"></div>
+    </div>
     <div id="quiz-screen" class="hidden">
         <div class="progress-container">
             <div id="progress" style="font-weight:bold; font-size:0.9rem;"></div>
@@ -57,7 +52,6 @@
         <div id="feedback"></div>
         <button id="next-btn" onclick="nextQuestion()">次へ進む</button>
     </div>
-
     <div id="result-screen" class="hidden" style="text-align: center;">
         <h2 style="color: var(--success);">クリア！</h2>
         <div id="result-text" style="font-size: 1.8rem; margin: 25px 0; font-weight: bold;"></div>
@@ -66,48 +60,39 @@
 </div>
 
 <script>
-    /* ⚠️ 設定エリア */
     const SPREADSHEET_ID = '1WdkMMX6BOCfwCPkKL7zmRCFOZYZx_ZYjettgS29EFSE';
     const SHEET_NAME = 'シート1'; 
-    const API_URL = `https://docs.google.com/spreadsheets/d/${SPREADSHEET_ID}/gviz/tq?tqx=out:csv&sheet=${encodeURIComponent(SHEET_NAME)}`;
+    const CSV_URL = `https://docs.google.com/spreadsheets/d/${SPREADSHEET_ID}/gviz/tq?tqx=out:csv&sheet=${encodeURIComponent(SHEET_NAME)}`;
 
     let allData = [];
     let currentPack = [];
     let currentIdx = 0;
     let score = 0;
 
-async function fetchData() {
+    async function fetchData() {
         try {
-            // スプレッドシートのデータを取得（少し汎用的な形式に変更）
-            const response = await fetch(API_URL);
+            const response = await fetch(CSV_URL);
             const text = await response.text();
             
-            // CSV/TSVのどちらでも、引用符を考慮して正しく分割する処理
-            const rows = text.split(/\r?\n/).filter(line => line.trim() !== "").map(row => {
-                // カンマまたはタブで分割（引用符内の区切りは無視）
-                const splitter = /(".*?"|[^",\t\s]+)(?=\s*[,\t]|\s*$)/g;
-                let m;
-                const res = [];
-                while ((m = splitter.exec(row)) !== null) {
-                    res.push(m[1].replace(/^"|"$/g, '').trim());
+            // どんな壊れ方をしていても「引用符に囲まれた中身」を列として抽出する
+            const rows = text.split(/\r?\n/).filter(l => l.trim()).map(line => {
+                const result = [];
+                let cur = "", inQuotes = false;
+                for (let char of line) {
+                    if (char === '"') inQuotes = !inQuotes;
+                    else if (char === ',' && !inQuotes) { result.push(cur.trim()); cur = ""; }
+                    else cur += char;
                 }
-                return res;
+                result.push(cur.trim());
+                return result;
             });
 
-            // 見出しを除き、列が足りない行は捨てる
-            allData = rows.slice(1).filter(row => row.length >= 6);
-            
-            if (allData.length === 0) {
-                throw new Error("データが見つかりません。スプレッドシートの入力内容を確認してください。");
-            }
-
+            allData = rows.slice(1).filter(r => r.length >= 6);
             buildCategorizedMenu();
-            
             document.getElementById('loading-screen').classList.add('hidden');
             document.getElementById('menu-screen').classList.remove('hidden');
-        } catch (error) {
-            console.error(error);
-            document.getElementById('loading-screen').innerText = "エラー：データの読み込みに失敗しました。公開設定やスプレッドシートのIDを再確認してください。";
+        } catch (e) {
+            document.getElementById('loading-screen').innerText = "エラー：再読み込みしてください。";
         }
     }
 
@@ -115,44 +100,32 @@ async function fetchData() {
         const container = document.getElementById('grade-container');
         container.innerHTML = "";
         const rawUnits = [...new Set(allData.map(row => row[0]))];
-        const categories = {};
-
-        rawUnits.forEach(rawName => {
-            const parts = rawName.split('：');
-            const grade = parts.length > 1 ? parts[0] : "その他";
-            const unit = parts.length > 1 ? parts[1] : parts[0];
-            if (!categories[grade]) categories[grade] = [];
-            categories[grade].push({ fullName: rawName, displayName: unit });
+        const cats = {};
+        rawUnits.forEach(n => {
+            const p = n.split('：');
+            const g = p[0];
+            if (!cats[g]) cats[g] = [];
+            cats[g].push({ full: n, disp: p[1] || n });
         });
-
-        for (const grade in categories) {
-            const section = document.createElement('div');
-            section.className = "grade-section";
-            const title = document.createElement('div');
-            title.className = "grade-title";
-            title.innerText = grade;
-            section.appendChild(title);
+        for (const g in cats) {
+            const sec = document.createElement('div');
+            sec.className = "grade-section";
+            sec.innerHTML = `<div class="grade-title">${g}</div>`;
             const grid = document.createElement('div');
             grid.className = "menu-grid";
-            categories[grade].forEach(item => {
-                const btn = document.createElement('button');
-                btn.className = "menu-btn";
-                btn.innerText = item.displayName;
-                btn.onclick = () => startQuiz(item.fullName);
-                grid.appendChild(btn);
+            cats[g].forEach(u => {
+                const b = document.createElement('button');
+                b.className = "menu-btn"; b.innerText = u.disp;
+                b.onclick = () => startQuiz(u.full);
+                grid.appendChild(b);
             });
-            section.appendChild(grid);
-            container.appendChild(section);
+            sec.appendChild(grid);
+            container.appendChild(sec);
         }
     }
 
-    function startQuiz(fullName) {
-        const filtered = allData.filter(row => row[0] === fullName);
-        if (filtered.length < 5) {
-            alert(`「${fullName}」の問題が5問未満です。`);
-            return;
-        }
-        currentPack = filtered.sort(() => Math.random() - 0.5).slice(0, 5);
+    function startQuiz(name) {
+        currentPack = allData.filter(r => r[0] === name).sort(() => Math.random() - 0.5).slice(0, 5);
         currentIdx = 0; score = 0;
         document.getElementById('menu-screen').classList.add('hidden');
         document.getElementById('quiz-screen').classList.remove('hidden');
@@ -160,66 +133,44 @@ async function fetchData() {
     }
 
     async function loadQuestion() {
-        const row = currentPack[currentIdx];
-        document.getElementById('progress').innerText = `${currentPack[0][0].split('：')[1] || currentPack[0][0]}：${currentIdx + 1} / 5`;
-        
-        const qElement = document.getElementById('q-text');
-        qElement.innerHTML = row[1].trim(); 
-        
-        const optContainer = document.getElementById('options');
-        optContainer.innerHTML = "";
-        
-        [row[2], row[3], row[4]].forEach((text, i) => {
-            const btn = document.createElement('button');
-            btn.className = "opt-btn";
-            btn.innerHTML = text.trim();
-            btn.onclick = () => check(i, parseInt(row[5]));
-            optContainer.appendChild(btn);
+        const r = currentPack[currentIdx];
+        document.getElementById('progress').innerText = `${r[0]}：${currentIdx + 1} / 5`;
+        document.getElementById('q-text').innerHTML = r[1];
+        const opts = document.getElementById('options');
+        opts.innerHTML = "";
+        [r[2], r[3], r[4]].forEach((t, i) => {
+            const b = document.createElement('button');
+            b.className = "opt-btn"; b.innerHTML = t;
+            b.onclick = () => check(i, parseInt(r[5]));
+            opts.appendChild(b);
         });
-
         document.getElementById('feedback').style.display = 'none';
         document.getElementById('next-btn').style.display = 'none';
-        
-        // 数式変換が終わるまで待機
-        if (window.MathJax) {
-            await MathJax.typesetPromise();
-        }
+        if (window.MathJax) await MathJax.typesetPromise();
     }
 
-    async function check(userIdx, correctIdx) {
+    async function check(uIdx, cIdx) {
         const f = document.getElementById('feedback');
-        const buttons = document.querySelectorAll('.opt-btn');
-        buttons.forEach(b => b.disabled = true);
-        
+        document.querySelectorAll('.opt-btn').forEach(b => b.disabled = true);
         f.style.display = 'block';
-        if(userIdx === correctIdx) {
-            score++;
-            f.className = 'feedback correct';
+        if(uIdx === cIdx) {
+            score++; f.className = 'feedback correct';
             f.innerHTML = `<strong>正解！✨</strong><br>${currentPack[currentIdx][6]}`;
         } else {
             f.className = 'feedback wrong';
             f.innerHTML = `<strong>不正解...</strong><br>解説：${currentPack[currentIdx][6]}`;
-            buttons[correctIdx].style.borderColor = "var(--success)";
-            buttons[correctIdx].style.borderStyle = "dashed";
         }
-
-        // 解説内の数式も変換
-        if (window.MathJax) {
-            await MathJax.typesetPromise();
-        }
+        if (window.MathJax) await MathJax.typesetPromise();
         document.getElementById('next-btn').style.display = 'block';
     }
 
     function nextQuestion() {
-        currentIdx++;
-        if(currentIdx < 5) loadQuestion();
-        else showResult();
-    }
-
-    function showResult() {
-        document.getElementById('quiz-screen').classList.add('hidden');
-        document.getElementById('result-screen').classList.remove('hidden');
-        document.getElementById('result-text').innerText = `${score} / 5 正解`;
+        if(++currentIdx < 5) loadQuestion();
+        else {
+            document.getElementById('quiz-screen').classList.add('hidden');
+            document.getElementById('result-screen').classList.remove('hidden');
+            document.getElementById('result-text').innerText = `${score} / 5 正解`;
+        }
     }
 
     function showMenu() {
@@ -228,10 +179,7 @@ async function fetchData() {
         document.getElementById('result-screen').classList.add('hidden');
     }
 
-    function confirmBack() {
-        if(confirm("メニューに戻りますか？")) showMenu();
-    }
-
+    function confirmBack() { if(confirm("メニューに戻りますか？")) showMenu(); }
     fetchData();
 </script>
 </body>

@@ -27,18 +27,22 @@
         #feedback { margin-top: 20px; padding: 15px; border-radius: 10px; display: none; }
         .correct { background: #e6f4ea; border: 1px solid var(--success); }
         .wrong { background: #fce8e8; border: 1px solid var(--error); }
-        #next-btn { margin-top: 20px; width: 100%; padding: 15px; background: var(--primary); color: white; border: none; border-radius: 10px; display: none; cursor: pointer; }
+        #next-btn { margin-top: 20px; width: 100%; padding: 15px; background: var(--primary); color: white; border: none; border-radius: 10px; font-weight: bold; display: none; cursor: pointer; }
         .hidden { display: none; }
+        #result-screen { text-align: center; }
+        .score-text { font-size: 2rem; font-weight: bold; color: var(--primary); margin: 20px 0; }
     </style>
 </head>
 <body>
 
 <div class="container">
     <div id="loading-screen" style="text-align:center;">読み込み中...</div>
+    
     <div id="menu-screen" class="hidden">
         <h1>計算の工夫</h1>
         <div id="grade-container"></div>
     </div>
+    
     <div id="quiz-screen" class="hidden">
         <div id="progress" style="margin-bottom:10px; font-weight:bold;"></div>
         <div class="question" id="q-text"></div>
@@ -46,10 +50,16 @@
         <div id="feedback"></div>
         <button id="next-btn" onclick="nextQuestion()">次へ</button>
     </div>
+
+    <div id="result-screen" class="hidden">
+        <h2 style="color: var(--success);">全問終了！</h2>
+        <div class="score-text" id="score-display"></div>
+        <button class="menu-btn" style="width: 100%;" onclick="location.reload()">パック選択画面に戻る</button>
+    </div>
 </div>
 
 <script>
-    // ⚠️ ここに先ほどコピーした「ウェブに公開」のCSV用URLを貼り付けてください
+    // ⚠️ スプレッドシートの「ウェブに公開」CSV用URLをここに貼り直してください
     const CSV_RAW_URL = 'https://docs.google.com/spreadsheets/d/e/2PACX-1vSCtxF0pf9eI7IcGKjC_VViZhet0baUkvfM6G-21yBqb44zWFxQ5ynuaDri4fhHEtqkSaGmGQTXO45m/pub?gid=0&single=true&output=csv';
 
     let allData = [];
@@ -62,7 +72,6 @@
             const response = await fetch(CSV_RAW_URL);
             const csvText = await response.text();
             
-            // 強力なCSVパース処理
             const rows = [];
             let row = [];
             let col = "";
@@ -84,7 +93,7 @@
             document.getElementById('loading-screen').classList.add('hidden');
             document.getElementById('menu-screen').classList.remove('hidden');
         } catch (e) {
-            document.getElementById('loading-screen').innerText = "エラー：URLを確認してください。";
+            document.getElementById('loading-screen').innerText = "エラー：読み込みに失敗しました。";
         }
     }
 
@@ -119,6 +128,7 @@
         currentIdx = 0; score = 0;
         document.getElementById('menu-screen').classList.add('hidden');
         document.getElementById('quiz-screen').classList.remove('hidden');
+        document.getElementById('result-screen').classList.add('hidden');
         showQ();
     }
 
@@ -150,10 +160,13 @@
     }
 
     function nextQuestion() {
-        if(++currentIdx < 5) showQ();
-        else {
-            alert(`終了！正解数: ${score}/5`);
-            location.reload();
+        if(++currentIdx < 5) {
+            showQ();
+        } else {
+            // クイズ画面を隠して結果画面を表示
+            document.getElementById('quiz-screen').classList.add('hidden');
+            document.getElementById('result-screen').classList.remove('hidden');
+            document.getElementById('score-display').innerText = `${score} / 5 正解`;
         }
     }
     fetchData();

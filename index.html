@@ -66,7 +66,7 @@
 </div>
 
 <script>
-    /* ⚠️ 設定エリア：自分のIDを貼り付けてください */
+    /* ⚠️ 設定エリア */
     const SPREADSHEET_ID = '1WdkMMX6BOCfwCPkKL7zmRCFOZYZx_ZYjettgS29EFSE';
     const SHEET_NAME = 'シート1'; 
     const API_URL = `https://docs.google.com/spreadsheets/d/${SPREADSHEET_ID}/gviz/tq?tqx=out:csv&sheet=${encodeURIComponent(SHEET_NAME)}`;
@@ -84,9 +84,7 @@
                 return row.split(/,(?=(?:(?:[^"]*"){2})*[^"]*$)/).map(cell => cell.replace(/^"|"$/g, '').trim());
             });
             allData = rows.slice(1).filter(row => row.length >= 6 && row[0] !== "");
-            
             buildCategorizedMenu();
-            
             document.getElementById('loading-screen').classList.add('hidden');
             document.getElementById('menu-screen').classList.remove('hidden');
         } catch (error) {
@@ -97,35 +95,26 @@
     function buildCategorizedMenu() {
         const container = document.getElementById('grade-container');
         container.innerHTML = "";
-
-        // 全てのユニークなA列（学年：単元）を取得
         const rawUnits = [...new Set(allData.map(row => row[0]))];
-        
-        // 学年ごとに整理するためのオブジェクト
         const categories = {};
 
         rawUnits.forEach(rawName => {
             const parts = rawName.split('：');
             const grade = parts.length > 1 ? parts[0] : "その他";
             const unit = parts.length > 1 ? parts[1] : parts[0];
-
             if (!categories[grade]) categories[grade] = [];
             categories[grade].push({ fullName: rawName, displayName: unit });
         });
 
-        // HTML生成
         for (const grade in categories) {
             const section = document.createElement('div');
             section.className = "grade-section";
-            
             const title = document.createElement('div');
             title.className = "grade-title";
             title.innerText = grade;
             section.appendChild(title);
-
             const grid = document.createElement('div');
             grid.className = "menu-grid";
-
             categories[grade].forEach(item => {
                 const btn = document.createElement('button');
                 btn.className = "menu-btn";
@@ -133,7 +122,6 @@
                 btn.onclick = () => startQuiz(item.fullName);
                 grid.appendChild(btn);
             });
-
             section.appendChild(grid);
             container.appendChild(section);
         }
@@ -152,22 +140,19 @@
         loadQuestion();
     }
 
-  function loadQuestion() {
+    async function loadQuestion() {
         const row = currentPack[currentIdx];
         document.getElementById('progress').innerText = `${currentPack[0][0].split('：')[1] || currentPack[0][0]}：${currentIdx + 1} / 5`;
         
-        // 問題文の表示（前後の空白を削除して確実に数式として認識させる）
         const qElement = document.getElementById('q-text');
         qElement.innerHTML = row[1].trim(); 
         
-        // 選択肢の生成
         const optContainer = document.getElementById('options');
         optContainer.innerHTML = "";
         
         [row[2], row[3], row[4]].forEach((text, i) => {
             const btn = document.createElement('button');
             btn.className = "opt-btn";
-            // 選択肢も数式が含まれる可能性があるので trim する
             btn.innerHTML = text.trim();
             btn.onclick = () => check(i, parseInt(row[5]));
             optContainer.appendChild(btn);
@@ -176,16 +161,17 @@
         document.getElementById('feedback').style.display = 'none';
         document.getElementById('next-btn').style.display = 'none';
         
-        // 重要：数式を再レンダリングする命令を少し遅らせて確実に実行
+        // 数式変換が終わるまで待機
         if (window.MathJax) {
-            MathJax.typesetPromise().catch((err) => console.log(err));
+            await MathJax.typesetPromise();
         }
     }
 
-    function check(userIdx, correctIdx) {
+    async function check(userIdx, correctIdx) {
         const f = document.getElementById('feedback');
         const buttons = document.querySelectorAll('.opt-btn');
         buttons.forEach(b => b.disabled = true);
+        
         f.style.display = 'block';
         if(userIdx === correctIdx) {
             score++;
@@ -197,8 +183,12 @@
             buttons[correctIdx].style.borderColor = "var(--success)";
             buttons[correctIdx].style.borderStyle = "dashed";
         }
+
+        // 解説内の数式も変換
+        if (window.MathJax) {
+            await MathJax.typesetPromise();
+        }
         document.getElementById('next-btn').style.display = 'block';
-        if (window.MathJax) MathJax.typeset();
     }
 
     function nextQuestion() {

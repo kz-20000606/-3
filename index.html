@@ -3,24 +3,24 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>計算の工夫トレーニング</title>
+    <title>計算の工夫トレーニング Pro</title>
     <script>
-        window.MathJax = {
-            tex: { inlineMath: [['$', '$']] },
-            chtml: { displayAlign: 'left' }
-        };
+        window.MathJax = { tex: { inlineMath: [['$', '$']] }, chtml: { displayAlign: 'left' } };
     </script>
     <script id="MathJax-script" async src="https://cdn.jsdelivr.net/npm/mathjax@3/es5/tex-mml-chtml.js"></script>
     <style>
-        :root { --primary: #4a90e2; --success: #28a745; --error: #dc3545; --bg: #f4f7f9; }
+        :root { --primary: #4a90e2; --secondary: #f39c12; --success: #28a745; --error: #dc3545; --bg: #f4f7f9; }
         body { font-family: sans-serif; background: var(--bg); margin: 0; padding: 15px; }
         .container { max-width: 600px; margin: auto; background: white; padding: 25px; border-radius: 15px; box-shadow: 0 4px 15px rgba(0,0,0,0.1); }
         h1 { text-align: center; color: var(--primary); border-bottom: 2px solid var(--primary); padding-bottom: 10px; }
+        .mode-selection { display: grid; gap: 15px; margin-top: 30px; }
+        .mode-btn { padding: 20px; font-size: 1.1rem; border-radius: 12px; border: none; cursor: pointer; font-weight: bold; color: white; transition: 0.2s; }
+        .btn-blue { background: var(--primary); }
+        .btn-orange { background: var(--secondary); }
         .grade-section { margin-bottom: 25px; }
         .grade-title { font-weight: bold; background: #eee; padding: 5px 10px; border-left: 5px solid #aaa; margin-bottom: 10px; }
         .menu-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; }
         .menu-btn { padding: 15px; background: white; border: 2px solid var(--primary); color: var(--primary); border-radius: 10px; cursor: pointer; font-weight: bold; min-height: 55px; }
-        .menu-btn:hover { background: var(--primary); color: white; }
         .question { font-size: 1.25rem; font-weight: bold; margin-bottom: 20px; background: #f8f9fa; padding: 20px; border-radius: 8px; border-left: 5px solid var(--primary); }
         .options { display: grid; gap: 10px; }
         .opt-btn { padding: 15px; border: 2px solid #eee; border-radius: 10px; background: white; font-size: 1.1rem; cursor: pointer; text-align: left; }
@@ -31,6 +31,7 @@
         .hidden { display: none; }
         #result-screen { text-align: center; }
         .score-text { font-size: 2rem; font-weight: bold; color: var(--primary); margin: 20px 0; }
+        .rank-text { font-size: 1.2rem; color: var(--secondary); font-weight: bold; margin-bottom: 20px; }
     </style>
 </head>
 <body>
@@ -38,8 +39,17 @@
 <div class="container">
     <div id="loading-screen" style="text-align:center;">読み込み中...</div>
     
+    <div id="mode-screen" class="hidden">
+        <h1>計算の工夫トレーニング</h1>
+        <div class="mode-selection">
+            <button class="mode-btn btn-blue" onclick="showGradeSelect('normal')">じっくり練習（単元別）</button>
+            <button class="mode-btn btn-orange" onclick="showGradeSelect('random')">ランダムチャレンジ！</button>
+        </div>
+    </div>
+
     <div id="menu-screen" class="hidden">
-        <h1>計算の工夫</h1>
+        <button onclick="showModeSelect()" style="margin-bottom:10px;">← 戻る</button>
+        <h2 id="menu-title">モード名</h2>
         <div id="grade-container"></div>
     </div>
     
@@ -54,32 +64,28 @@
     <div id="result-screen" class="hidden">
         <h2 style="color: var(--success);">全問終了！</h2>
         <div class="score-text" id="score-display"></div>
-        <button class="menu-btn" style="width: 100%;" onclick="location.reload()">パック選択画面に戻る</button>
+        <div class="rank-text" id="rank-display"></div>
+        <button class="menu-btn" style="width: 100%;" onclick="location.reload()">トップに戻る</button>
     </div>
 </div>
 
 <script>
-    // ⚠️ スプレッドシートの「ウェブに公開」CSV用URLをここに貼り直してください
     const CSV_RAW_URL = 'https://docs.google.com/spreadsheets/d/e/2PACX-1vSCtxF0pf9eI7IcGKjC_VViZhet0baUkvfM6G-21yBqb44zWFxQ5ynuaDri4fhHEtqkSaGmGQTXO45m/pub?gid=0&single=true&output=csv';
 
     let allData = [];
     let currentPack = [];
     let currentIdx = 0;
     let score = 0;
+    let currentMode = 'normal';
 
     async function fetchData() {
         try {
             const response = await fetch(CSV_RAW_URL);
             const csvText = await response.text();
-            
             const rows = [];
-            let row = [];
-            let col = "";
-            let inQuotes = false;
-
+            let row = []; let col = ""; let inQuotes = false;
             for (let i = 0; i < csvText.length; i++) {
-                const char = csvText[i];
-                const nextChar = csvText[i+1];
+                const char = csvText[i]; const nextChar = csvText[i+1];
                 if (inQuotes && char === '"' && nextChar === '"') { col += '"'; i++; }
                 else if (char === '"') { inQuotes = !inQuotes; }
                 else if (char === ',' && !inQuotes) { row.push(col.trim()); col = ""; }
@@ -87,54 +93,72 @@
                 else if (char !== '\r') { col += char; }
             }
             if (col || row.length) { row.push(col.trim()); rows.push(row); }
-
             allData = rows.slice(1).filter(r => r.length >= 6);
-            buildMenu();
+            
             document.getElementById('loading-screen').classList.add('hidden');
-            document.getElementById('menu-screen').classList.remove('hidden');
+            showModeSelect();
         } catch (e) {
-            document.getElementById('loading-screen').innerText = "エラー：読み込みに失敗しました。";
+            document.getElementById('loading-screen').innerText = "読み込みエラーが発生しました。";
         }
+    }
+
+    function showModeSelect() {
+        hideAll();
+        document.getElementById('mode-screen').classList.remove('hidden');
+    }
+
+    function showGradeSelect(mode) {
+        currentMode = mode;
+        hideAll();
+        const menuScreen = document.getElementById('menu-screen');
+        menuScreen.classList.remove('hidden');
+        document.getElementById('menu-title').innerText = mode === 'normal' ? "単元を選んで練習" : "学年を選んでランダム挑戦";
+        buildMenu();
     }
 
     function buildMenu() {
         const container = document.getElementById('grade-container');
-        const units = [...new Set(allData.map(r => r[0]))];
-        const cats = {};
-        units.forEach(u => {
-            const g = u.split('：')[0];
-            if (!cats[g]) cats[g] = [];
-            cats[g].push({ full: u, disp: u.split('：')[1] || u });
-        });
-        for (const g in cats) {
+        container.innerHTML = "";
+        const grades = [...new Set(allData.map(r => r[0].split('：')[0]))];
+        
+        grades.forEach(g => {
             const sec = document.createElement('div');
             sec.className = "grade-section";
             sec.innerHTML = `<div class="grade-title">${g}</div>`;
             const grid = document.createElement('div');
             grid.className = "menu-grid";
-            cats[g].forEach(item => {
+
+            if (currentMode === 'normal') {
+                const units = [...new Set(allData.filter(r => r[0].startsWith(g)).map(r => r[0]))];
+                units.forEach(u => {
+                    const b = document.createElement('button');
+                    b.className = "menu-btn"; b.innerText = u.split('：')[1] || u;
+                    b.onclick = () => start(allData.filter(r => r[0] === u), u);
+                    grid.appendChild(b);
+                });
+            } else {
                 const b = document.createElement('button');
-                b.className = "menu-btn"; b.innerText = item.disp;
-                b.onclick = () => start(item.full);
+                b.className = "menu-btn"; b.style.gridColumn = "span 2";
+                b.innerText = `${g}全範囲からランダム出題`;
+                b.onclick = () => start(allData.filter(r => r[0].startsWith(g)), `${g}ランダム`);
                 grid.appendChild(b);
-            });
+            }
             sec.appendChild(grid);
             container.appendChild(sec);
-        }
+        });
     }
 
-    function start(name) {
-        currentPack = allData.filter(r => r[0] === name).sort(() => Math.random() - 0.5).slice(0, 5);
+    function start(questions, title) {
+        currentPack = questions.sort(() => Math.random() - 0.5).slice(0, 5);
         currentIdx = 0; score = 0;
-        document.getElementById('menu-screen').classList.add('hidden');
+        hideAll();
         document.getElementById('quiz-screen').classList.remove('hidden');
-        document.getElementById('result-screen').classList.add('hidden');
         showQ();
     }
 
     async function showQ() {
         const r = currentPack[currentIdx];
-        document.getElementById('progress').innerText = `${r[0]}：${currentIdx+1}/5`;
+        document.getElementById('progress').innerText = `${currentIdx+1} / 5 問目`;
         document.getElementById('q-text').innerHTML = r[1];
         const opts = document.getElementById('options');
         opts.innerHTML = "";
@@ -160,15 +184,25 @@
     }
 
     function nextQuestion() {
-        if(++currentIdx < 5) {
-            showQ();
-        } else {
-            // クイズ画面を隠して結果画面を表示
-            document.getElementById('quiz-screen').classList.add('hidden');
-            document.getElementById('result-screen').classList.remove('hidden');
-            document.getElementById('score-display').innerText = `${score} / 5 正解`;
-        }
+        if(++currentIdx < 5) showQ();
+        else showResult();
     }
+
+    function showResult() {
+        hideAll();
+        document.getElementById('result-screen').classList.remove('hidden');
+        document.getElementById('score-display').innerText = `${score} / 5 正解`;
+        
+        const ranks = ["計算のたまご", "計算のひよこ", "計算の達人候補", "計算マスター", "計算王", "計算神"];
+        document.getElementById('rank-display').innerText = `あなたのランク：${ranks[score]}`;
+    }
+
+    function hideAll() {
+        ['mode-screen', 'menu-screen', 'quiz-screen', 'result-screen'].forEach(id => {
+            document.getElementById(id).classList.add('hidden');
+        });
+    }
+
     fetchData();
 </script>
 </body>
